@@ -1,0 +1,46 @@
+---
+- name: vote-app
+  hosts: ec2
+  
+  tasks:
+    
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present 
+      become: true
+
+    - name: Start Docker  
+      service:  
+        name: docker 
+        state: started  
+        enabled: yes
+      become: true
+        
+    - name: Download and install Docker Compose
+      shell: |
+        curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      become: true
+    
+   
+    - name: Create vote-app directory on EC2
+      ansible.builtin.file:  
+        path: /home/ec2-user/vote-app
+        state: directory
+        mode: '700'
+    
+    - name: Copy docker-compose.yml file
+      ansible.builtin.copy:
+        src: docker-compose.yml
+        dest: /home/ec2-user/vote-app/
+        mode: '400'
+
+    - name: Pull Docker images and run the app
+      shell: |
+        docker pull 1998shehab/vote:1
+        docker pull 1998shehab/worker:1
+        docker pull 1998shehab/result:1
+        cd vote-app
+        docker-compose up -d
+      become: true
